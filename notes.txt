@@ -1,0 +1,82 @@
+
+- Uses forked <iBoardRF24.h> instead of RF24-master
+- iBoardRF24 allows changing pin outs used by nRFL01+ transceiver to get around conflicts with Ethernet shield on SPI bus
+- iBoardRF24 radio(RF_CE, RF_CSN, RF_MOSI, RF_MISO, RF_SCK, RF_IRQ)
+- Use RF24 payload size of 32 to include struct
+- Using the Interrupt version of Receiver to fire event for incoming payload (sets flag, most work done in loop())
+- LowPower lib puts Senders to sleep after each send to conserve battery
+- data uploaded to Xively, updated to LCD display, and vars loaded to web page on interrupt (via flag) 
+(must set up a Xively account and get an API key and Feed ID)  
+  
+- "receiver" web server on receiver currently set to 192.168.1.79:7979
+- "remote" web server on receiver currently set to 192.168.1.78:7878
+- Senders run Arduino Serial console at 2400 baud, Receiver and Remote at 9600
+- Sender upload sketches at 7200 baud (defined in boards.txt)
+
+
+Use modified Adafruit-BMP085-Library-master library for pressure sensor
+=======================================================================
+add to Adafruit_BMP085.h:
+-------------------------
+float read_p0(float myAltitude, float ABSpressure);     // RJM 8/2015
+
+add to Adafruit_BMP085.cpp:
+---------------------------
+// RJM 8/2015, p0 - standard pressure at sea level calculation
+float Adafruit_BMP085::read_p0(float myAltitude, float ABSpressure) {
+ float p0;
+ p0 = ABSpressure / pow((1.0 - ( myAltitude / 44330.0 )), 5.255);  
+ return p0;
+}
+
+
+
+Arduino pin outs for SENDER(s):
+-------------------------------
+nRF24L01+ transceiver (on-board header - runs off 3.3v!) uses:
+D11 - RF_MOSI
+D12 - RF_MISO
+D13 - RF_SCK
+D8 - RF_CE
+D7 - RF_CSN
+D2 - RF_IRQ
+
+A4 - HTU21D On-Board Temp/Hum sensor I2C SDA 
+A5 - HTU21D On-Board Temp/Hum sensor I2C SCL
+   --shared with--
+A4 - BMP085 baro press sensor (3.3v) I2C SDA 
+A5 - BMP085 baro press sensor (3.3v) I2C SCL
+
+
+
+Arduino pin outs for RECEIVER:
+------------------------------
+D2 - RF_IRQ
+D3 - RF_CE
+D4 - (Not yet used, but Ethernet Shield SD card would use for SPI CS)
+D5 - RF_MOSI
+D6 - RF_MISO
+D7 - RF_SCK
+D8 - RF_CSN
+
+D10 - Ethernet Shield (CS)
+D11 - Ethernet Shield (MOSI)
+D12 - Ethernet Shield (MISO)
+D13 - Ethernet Shield (SCK)
+
+A4 - AdaFruit 20x4 LCD with I2C backpack - I2C SDA
+A5 - AdaFruit 20x4 LCD with I2C backpack - I2C SCL
+
+SDA (same as A4) - RTC DS3231 I2C SDA
+SCL (same as A5) - RTC DS3231 I2C SCL
+
+nRF24L01+ transceiver works off 3.3v internally, but fed from 5v via nRF24L01+ Breakout Adapter with On-board 3.3V Regulator and caps
+DS3231 RTC can work off 3.3v or 5v
+
+
+
+Arduino pin outs for REMOTE:
+------------------------------
+SainSmart LCD2004 = 5v
+A4 - SainSmart LCD2004 I2C SDA
+A5 - SainSmart LCD2004 I2C SCL
